@@ -4,6 +4,8 @@ Juego base de Roblox desarrollado "como código": todo el juego vive en este rep
 
 Gameplay inicial: el jugador aparece en el centro del mapa, recoge monedas tocándolas, su contador `Coins` sube en el leaderboard y las monedas reaparecen a los pocos segundos.
 
+> 📋 La configuración pendiente (secretos de Roblox, instalación en Kubuntu) y el estado actual del proyecto están en [`pendientes.md`](pendientes.md).
+
 ---
 
 ## Arquitectura
@@ -34,7 +36,9 @@ Gameplay inicial: el jugador aparece en el centro del mapa, recoge monedas tocá
 ├── default.project.json                 Mapa de Rojo: carpetas → instancias + mapa inicial
 ├── aftman.toml                          Versiones fijadas de rojo, selene y stylua
 ├── selene.toml / stylua.toml            Configuración de linter y formateador
-└── .vscode/                             Extensiones y ajustes recomendados
+├── .vscode/                             Extensiones y ajustes recomendados
+├── AGENTS.md / CLAUDE.md                Instrucciones para agentes de IA
+└── pendientes.md                        Checklist de configuración y estado actual
 ```
 
 ### Principios
@@ -62,11 +66,22 @@ Gameplay inicial: el jugador aparece en el centro del mapa, recoge monedas tocá
 
 | Herramienta | Para qué | Instalación |
 | --- | --- | --- |
-| [Roblox Studio](https://create.roblox.com/) | Probar y editar el juego | Descargar desde create.roblox.com (Windows / macOS) |
+| [Roblox Studio](https://create.roblox.com/) | Probar y editar el juego | Windows / macOS: desde create.roblox.com. Linux: con [Vinegar](https://vinegarhq.org) (ver abajo) |
 | [Aftman](https://github.com/LPGhatguy/aftman) | Instala las herramientas con la versión exacta del proyecto | Ver abajo |
 | Rojo, Selene, StyLua | Sincronizar, lint y formato | `aftman install` (automático) |
 | [VS Code](https://code.visualstudio.com/) | Editor | Al abrir el repo te sugerirá las extensiones de `.vscode/extensions.json` |
-| Plugin de Rojo para Studio | Conectar Studio con `rojo serve` | `rojo plugin install` o desde el Creator Store |
+| Plugin de Rojo para Studio | Conectar Studio con `rojo serve` | Creator Store (todas las plataformas) o `rojo plugin install` (solo Windows / macOS) |
+
+### Roblox Studio en Linux
+
+Roblox Studio no tiene versión oficial para Linux. Se ejecuta con **Vinegar**, un proyecto comunitario que usa Wine y se distribuye por Flathub:
+
+```bash
+flatpak install -y flathub org.vinegarhq.Vinegar
+flatpak run org.vinegarhq.Vinegar   # la primera vez descarga Studio
+```
+
+No lo confundas con **Sober** (`org.vinegarhq.Sober`), del mismo equipo: Sober sirve para *jugar* a Roblox, no abre Studio. La guía paso a paso para Kubuntu está en [`pendientes.md`](pendientes.md#5-entorno-local-en-kubuntu-2604).
 
 ### Instalar Aftman
 
@@ -90,9 +105,8 @@ Gameplay inicial: el jugador aparece en el centro del mapa, recoge monedas tocá
 
 ### Instalar el plugin de Rojo en Studio
 
-```bash
-rojo plugin install
-```
+- **Todas las plataformas (recomendado):** en Studio, *Toolbox → Creator Store → Plugins*, busca **Rojo** (el oficial) e instálalo. Debe ser una versión 7.7.x, compatible con `rojo 7.7.1`.
+- **Windows / macOS:** también puedes usar `rojo plugin install`. En Linux no funciona, porque no encuentra Studio dentro de Vinegar.
 
 Reinicia Roblox Studio; verás el botón **Rojo** en la pestaña *Plugins*.
 
@@ -224,6 +238,8 @@ Debe hacerlo alguien con permisos de **admin** en el repositorio.
 1. **Deployment branches and tags → Selected branches**: `main` para `production` y `develop` para `development`.
 2. **Environment secrets → Add environment secret**: los tres secretos con los valores de ese entorno.
 3. Opcional en `production`: **Required reviewers**, para aprobar cada publicación manualmente.
+
+> ⚠️ Si el repositorio es **privado**, los entornos y sus secretos requieren un plan de pago de GitHub (Pro, Team o Enterprise). En el plan gratuito solo funcionan en repos públicos. Con un repo privado en plan gratuito, los workflows tendrían que adaptarse para usar secretos de repositorio.
 
 No crees estos secretos a nivel de repositorio (*Secrets and variables → Actions → Repository secrets*): los workflows no los leen.
 

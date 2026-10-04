@@ -17,6 +17,8 @@ jq empty default.project.json                   # valida el JSON del proyecto
 Antes de dar un cambio por terminado, ejecuta lo mismo que el CI y comprueba que pasa:
 `stylua --check src && selene src && rojo build default.project.json -o game.rbxlx`.
 
+Entorno de desarrollo del equipo: **Kubuntu 26.04** (zsh). Roblox Studio corre con Vinegar (Flatpak), así que `rojo plugin install` no sirve: el plugin de Rojo se instala desde el Creator Store dentro de Studio.
+
 No hay tests automatizados ni forma de ejecutar el juego fuera de Roblox Studio: el comportamiento en partida debe verificarlo una persona en Studio. Dilo explícitamente cuando no se haya probado.
 
 ## Mapa de Rojo (`default.project.json`)
@@ -61,7 +63,7 @@ feature/* ──PR──▶ develop ──PR──▶ main ──▶ deploy a Ro
 - `deploy-dev.yml`: se ejecuta en push a `develop` y publica en el **Place DEV** (entorno `development`).
 - `deploy.yml`: se ejecuta en push a `main` y publica en **producción** (entorno `production`).
 - Trabaja en ramas `feature/*` creadas desde `develop`. No hagas commit ni push directo a `main`, porque cualquier push a `main` publica el juego a los jugadores.
-- La instalación de herramientas está en la acción compuesta `.github/actions/setup-tools/`, que comparten ambos workflows.
+- La instalación de herramientas está en la acción compuesta `.github/actions/setup-tools/`, que usan `ci.yml` y `publish-place.yml`.
 - Los secretos se leen solo del entorno de GitHub (sin `secrets: inherit`). No añadas `secrets: inherit` ni secretos de repositorio: un entorno mal configurado podría publicar en el place equivocado.
 
 ## Seguridad (obligatorio)
@@ -78,3 +80,10 @@ feature/* ──PR──▶ develop ──PR──▶ main ──▶ deploy a Ro
 - Al cambiar `Name`s o rutas en `default.project.json`, revisa los `require` y las referencias por ruta que dependan de ellos.
 - Las propiedades de `default.project.json` usan la sintaxis implícita de Rojo (`"Shape": "Cylinder"`, `"Tags": ["Coin"]`, vectores como arrays). Compruébalo siempre con `rojo build`.
 - `game.rbxlx`, `sourcemap.json` y `.env*` están en `.gitignore`. No los versiones.
+- Si el repo pasa a ser privado en un plan gratuito de GitHub, los secretos de entorno dejan de estar disponibles y los deploys fallan. Avísalo antes de cambiar la estrategia de secretos.
+
+## Documentación
+
+- `README.md`: documentación general del proyecto.
+- `pendientes.md`: checklist de configuración y estado actual. Actualízalo cuando se complete un pendiente o aparezca uno nuevo, con la fecha en la sección "Estado actual".
+- Al cambiar workflows, comandos o estructura, actualiza también `README.md` y este archivo.
