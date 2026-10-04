@@ -11,6 +11,39 @@ código en GitHub → CI → deploy automático a Roblox, y desarrollo local en 
 - [ ] 6. Probar el juego en Roblox Studio
 - [ ] 7. Hacer merge del PR y verificar el primer deploy
 
+## Estado actual (2026-10-04)
+
+**Listo:**
+
+- Proyecto completo en `develop`, sincronizado con GitHub y sin cambios pendientes.
+- CI pasó en GitHub (última ejecución visible: commit `4eba89d`).
+- Documentación: `README.md`, `AGENTS.md`, `CLAUDE.md` y este archivo.
+- VS Code y Flatpak instalados.
+
+**Falta para desarrollar en local:**
+
+1. **Roblox Studio**: está instalado **Sober** (`org.vinegarhq.Sober`), pero Sober es solo para *jugar*; no abre Studio. Hay que instalar **Vinegar** (sección 5.2):
+   ```bash
+   flatpak install -y flathub org.vinegarhq.Vinegar
+   ```
+2. **Aftman + Rojo/Selene/StyLua**: no están instalados (`aftman` y `rojo` no están en el PATH). Sigue la sección 5.3 y luego ejecuta `aftman install` en el repo.
+3. **Plugin de Rojo en Studio**: desde el Creator Store (sección 5.5).
+
+**Falta para el deploy automático (no bloquea empezar a desarrollar):**
+
+4. **`gh`** sigue conectado como `alvarockcl`, que ya no ve el repo (404, probablemente porque ahora es privado). Hay que ejecutar `gh auth login` con **patofuedev** (sección 4).
+5. **Secretos de Roblox** en los entornos `production` y `development` (secciones 1 a 3).
+   > ⚠️ Si el repo es **privado** y `patofuedev` tiene el plan **gratuito**, GitHub no permite usar entornos ni sus secretos en repos privados (requiere GitHub Pro). Hay dos opciones: volver a hacer el repo público, o adaptar los workflows para usar secretos de repositorio.
+
+Con los puntos 1 a 3 ya se puede desarrollar y probar en Studio con `rojo serve`. Los puntos 4 y 5 solo hacen falta para que el merge publique en Roblox. Mientras tanto, cada push a `develop` hace fallar **Deploy DEV** (sin publicar nada); se puede desactivar temporalmente con `gh workflow disable "Deploy DEV"`.
+
+Para empezar la primera funcionalidad:
+
+```bash
+git switch develop
+git switch -c feature/mi-funcion
+```
+
 ---
 
 ## 1. Crear las experiencias en Roblox
@@ -107,7 +140,9 @@ sudo apt install -y git curl unzip jq gh
 
 Roblox Studio **no tiene versión oficial para Linux**. Se ejecuta con [Vinegar](https://vinegarhq.org), un proyecto comunitario activo y distribuido por Flathub, que usa Wine por debajo.
 
-Kubuntu no trae Flatpak por defecto:
+> No confundir con **Sober** (`org.vinegarhq.Sober`), del mismo equipo: Sober sirve para *jugar* a Roblox, no para Studio.
+
+Kubuntu no trae Flatpak por defecto (en este equipo ya está instalado; puedes saltarte este paso):
 
 ```bash
 sudo apt install -y flatpak plasma-discover-backend-flatpak
