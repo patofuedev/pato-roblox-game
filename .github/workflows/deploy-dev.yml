@@ -1,20 +1,21 @@
-# Deploy a PRODUCCIÓN: publica el place de producción en cada push a main.
-# La lógica está en publish-place.yml; aquí solo se elige el disparador y el entorno.
-name: Deploy
+# Deploy a DESARROLLO: publica el Place DEV en cada push a develop, para
+# probar los cambios integrados antes de abrir el PR a main.
+# Usa los secretos del entorno "development" (otro place y otra API key).
+name: Deploy DEV
 
 on:
   push:
-    branches: [main]
+    branches: [develop]
 
 # SEGURIDAD: mínimo privilegio. Publicar en Roblox no requiere permisos de GitHub.
 permissions:
   contents: read
 
 jobs:
-  production:
+  development:
     uses: ./.github/workflows/publish-place.yml
     with:
-      environment: production
+      environment: development
     # SEGURIDAD: sin `secrets: inherit` a propósito. Los secretos se leen SOLO del
     # entorno indicado; así un entorno sin configurar falla en vez de usar por
     # error secretos de repositorio que apunten a otro place.

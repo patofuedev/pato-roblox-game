@@ -1,0 +1,63 @@
+# Workflow reutilizable: construye el place y publica una nueva versión en
+# Roblox mediante Open Cloud (Place Publishing API).
+#
+# No se ejecuta por sí solo: lo llaman deploy.yml (production) y
+# deploy-dev.yml (development). Cada entorno de GitHub tiene sus propios
+# ROBLOX_API_KEY / ROBLOX_UNIVERSE_ID / ROBLOX_PLACE_ID, así que el mismo
+# código publica en el place correcto según el entorno recibido.
+name: Publish place
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        description: Entorno de GitHub del que se leen los secretos (production | development).
+        required: true
+        type: string
+
+# SEGURIDAD: mínimo privilegio. Publicar en Roblox no requiere permisos de GitHub.
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    name: Build & Publish (${{ inputs.environment }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    # El entorno aporta sus secretos y sus reglas de protección (ramas
+    # permitidas, aprobación manual) configuradas en Settings → Environments.
+    environment: ${{ inputs.environment }}
+
+    # Nunca dos publicaciones a la vez en el mismo entorno; si llegan varios
+    # pushes seguidos se ejecutan en orden y no se cancela uno a medio publicar.
+    concurrency:
+      group: deploy-${{ inputs.environment }}
+      cancel-in-progress: false
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Setup tools
+        uses: ./.github/actions/setup-tools
+
+      - name: Show tool versions
+        run: rojo --version
+
+      - name: Lint (Selene)
+        run: selene src
+
+      - name: Build place
+        run: rojo build default.project.json -o game.rbxlx
+
+      # SEGURIDAD: los secretos se pasan como variables de entorno SOLO a este
+      # paso. GitHub enmascara su valor en los logs y el script nunca los imprime.
+      - name: Publish to Roblox (Open Cloud)
+        env:
+          ROBLOX_API_KEY: ${{ secrets.ROBLOX_API_KEY }}
+          ROBLOX_UNIVERSE_ID: ${{ secrets.ROBLOX_UNIVERSE_ID }}
+          ROBLOX_PLACE_ID: ${{ secrets.ROBLOX_PLACE_ID }}
+        run: ./scripts/publish-place.sh game.rbxlx

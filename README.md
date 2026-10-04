@@ -28,7 +28,9 @@ Gameplay inicial: el jugador aparece en el centro del mapa, recoge monedas tocá
 │   ├── actions/setup-tools/action.yml   Acción compuesta: instala Aftman + herramientas
 │   └── workflows/
 │       ├── ci.yml                       Lint + build en PRs y en develop (no publica)
-│       └── deploy.yml                   Build + publicación en Roblox al hacer push a main
+│       ├── publish-place.yml            Reutilizable: build + publicación en el entorno indicado
+│       ├── deploy-dev.yml               push a develop → Place DEV (entorno development)
+│       └── deploy.yml                   push a main → Place de producción (entorno production)
 ├── default.project.json                 Mapa de Rojo: carpetas → instancias + mapa inicial
 ├── aftman.toml                          Versiones fijadas de rojo, selene y stylua
 ├── selene.toml / stylua.toml            Configuración de linter y formateador
@@ -136,33 +138,37 @@ Genera `game.rbxlx`, el place completo (scripts + mapa), que puedes abrir direct
 ## CI/CD
 
 ```text
-feature/mi-funcion ──PR──▶ develop ──PR──▶ main ──▶ Roblox
+feature/mi-funcion ──PR──▶ develop ──PR──▶ main
         │                    │              │
-        └── CI (lint+build)  └── CI         └── Deploy: build + Open Cloud publish
+        └── CI (lint+build)  ├── CI         └── Deploy ──▶ Place de PRODUCCIÓN
+                             └── Deploy DEV ──▶ Place DEV
 ```
 
 | Workflow | Disparador | Qué hace | Publica |
 | --- | --- | --- | --- |
 | `ci.yml` | PR → `main`, PR → `develop`, push → `develop` | Instala herramientas, muestra versiones, valida `default.project.json`, StyLua, Selene, `rojo build`, sube `game.rbxlx` como artifact (7 días) | No |
-| `deploy.yml` | push → `main` | Lint, `rojo build`, publica la nueva versión del Place vía Open Cloud | Sí |
+| `deploy-dev.yml` | push → `develop` | Llama a `publish-place.yml` con el entorno `development` | Sí, en el Place DEV |
+| `deploy.yml` | push → `main` | Llama a `publish-place.yml` con el entorno `production` | Sí, en producción |
+| `publish-place.yml` | solo `workflow_call` | Lint, `rojo build`, publica la nueva versión del Place vía Open Cloud | — |
 
 ### Flujo de trabajo
 
 1. `git switch develop && git switch -c feature/mi-funcion`
 2. Commits + `git push -u origin feature/mi-funcion`
 3. PR hacia `develop` → el CI debe pasar → merge.
-4. Probar en `develop`.
-5. PR de `develop` hacia `main` → CI → merge → **deploy automático a Roblox**.
+4. El merge a `develop` publica automáticamente en el **Place DEV**: pruébalo ahí.
+5. PR de `develop` hacia `main` → CI → merge → **deploy automático a producción**.
 
 ### Seguridad en GitHub Actions
 
-- `permissions: contents: read` en ambos workflows (mínimo privilegio).
+- `permissions: contents: read` en todos los workflows (mínimo privilegio).
 - Solo actions oficiales de GitHub (`actions/checkout`, `actions/cache`, `actions/upload-artifact`), fijadas por SHA de commit.
 - Aftman se descarga en una versión fija y se verifica su SHA-256 antes de ejecutarlo; las herramientas salen de `aftman.toml`, que se revisa en cada PR.
 - `persist-credentials: false` en el checkout: el token no queda guardado en `.git/config`.
-- Los secretos de Roblox solo se exponen al paso de publicación, en `deploy.yml`. El CI de PRs no tiene acceso a ellos.
+- Los secretos de Roblox solo se exponen al paso de publicación de `publish-place.yml`. El CI de PRs no tiene acceso a ellos.
+- Los secretos se leen **solo del entorno** (no hay `secrets: inherit`). Un entorno sin configurar falla, en lugar de publicar por error en otro place con secretos de repositorio.
 - `scripts/publish-place.sh` envía la API key por un descriptor de fichero (no aparece en la línea de comandos) y nunca la imprime.
-- `concurrency` impide dos deploys simultáneos.
+- `concurrency` impide dos deploys simultáneos al mismo entorno.
 
 ### Publicación (Roblox Open Cloud)
 
@@ -182,13 +188,15 @@ Respuesta: `{ "versionNumber": 7 }`. El número de versión aparece en el resume
 
 ## GitHub Secrets
 
-Se necesitan tres secretos. **Nunca** los escribas en el repositorio, en issues ni en logs.
+Cada entorno de GitHub tiene sus propios tres secretos, con **los mismos nombres** y valores distintos. **Nunca** los escribas en el repositorio, en issues ni en logs.
 
-| Secreto | Valor |
-| --- | --- |
-| `ROBLOX_API_KEY` | API key de Open Cloud con permiso de publicar el place |
-| `ROBLOX_UNIVERSE_ID` | ID de la experiencia (universe) |
-| `ROBLOX_PLACE_ID` | ID del place a actualizar |
+| Secreto | `production` (rama `main`) | `development` (rama `develop`) |
+| --- | --- | --- |
+| `ROBLOX_API_KEY` | Key con permiso solo sobre la experiencia de producción | Key con permiso solo sobre la experiencia DEV |
+| `ROBLOX_UNIVERSE_ID` | ID de la experiencia de producción | ID de la experiencia DEV |
+| `ROBLOX_PLACE_ID` | ID del place de producción | ID del place DEV |
+
+Usa **dos experiencias distintas** en Roblox (por ejemplo, "Coin Collector" y "Coin Collector [DEV]") y una API key por cada una, para que una key DEV filtrada no pueda tocar producción.
 
 ### 1. Obtener los IDs
 
@@ -207,15 +215,31 @@ Se necesitan tres secretos. **Nunca** los escribas en el repositorio, en issues 
 
 Concede únicamente ese permiso y esa experiencia: si la key se filtrara, el daño quedaría limitado a ese place.
 
-### 3. Guardarlos en GitHub
+### 3. Crear los entornos y guardar los secretos
 
-*Settings → Secrets and variables → Actions → New repository secret*, una vez por cada secreto, con el nombre exacto de la tabla.
+Debe hacerlo alguien con permisos de **admin** en el repositorio.
 
-Opcional (recomendado): *Settings → Environments → `production`* (se crea automáticamente en el primer deploy). Ahí puedes:
+**Desde la web:** *Settings → Environments → New environment*, crea `production` y `development`. En cada uno:
 
-- guardar los secretos a nivel de entorno en lugar de repositorio,
-- limitar el despliegue a la rama `main`,
-- exigir aprobación manual antes de publicar.
+1. **Deployment branches and tags → Selected branches**: `main` para `production` y `develop` para `development`.
+2. **Environment secrets → Add environment secret**: los tres secretos con los valores de ese entorno.
+3. Opcional en `production`: **Required reviewers**, para aprobar cada publicación manualmente.
+
+No crees estos secretos a nivel de repositorio (*Secrets and variables → Actions → Repository secrets*): los workflows no los leen.
+
+**Desde la terminal** (`gh` autenticado con una cuenta admin; `gh secret set` pide cada valor sin mostrarlo):
+
+```bash
+R=repos/<owner>/<repo>
+for e in production:main development:develop; do
+  env=${e%%:*}; br=${e##*:}
+  gh api -X PUT $R/environments/$env --input - <<<'{"deployment_branch_policy":{"protected_branches":false,"custom_branch_policies":true}}'
+  gh api -X POST $R/environments/$env/deployment-branch-policies -f name=$br -f type=branch
+  for s in ROBLOX_API_KEY ROBLOX_UNIVERSE_ID ROBLOX_PLACE_ID; do
+    gh secret set $s --env $env --repo <owner>/<repo>
+  done
+done
+```
 
 Para probar el script localmente sin GitHub:
 
@@ -226,23 +250,11 @@ ROBLOX_API_KEY=... ROBLOX_UNIVERSE_ID=... ROBLOX_PLACE_ID=... ./scripts/publish-
 
 ---
 
-## Preparado para un Place DEV
+## Entornos
 
-El deploy usa el entorno de GitHub `production`, y todo el proceso de publicación está en `scripts/publish-place.sh`. Para añadir un place de desarrollo:
+| Entorno | Rama | Workflow | Place |
+| --- | --- | --- | --- |
+| `development` | `develop` | `deploy-dev.yml` | Experiencia DEV |
+| `production` | `main` | `deploy.yml` | Experiencia pública |
 
-1. Crea un place/experiencia DEV en Roblox y una API key con permiso solo sobre él.
-2. Crea el entorno `development` en GitHub con **los mismos nombres** de secretos (`ROBLOX_API_KEY`, `ROBLOX_UNIVERSE_ID`, `ROBLOX_PLACE_ID`) y los valores DEV.
-3. Copia `deploy.yml` como `deploy-dev.yml` cambiando:
-
-   ```yaml
-   on:
-     push:
-       branches: [develop]
-   concurrency:
-     group: deploy-development
-   jobs:
-     deploy:
-       environment: development
-   ```
-
-Como los secretos se resuelven por entorno, el script y los pasos no cambian.
+Ambos workflows llaman a `publish-place.yml` y solo cambian el entorno. Para añadir otro entorno (por ejemplo, `staging`): crea el entorno en GitHub con sus tres secretos y un workflow como `deploy-dev.yml` con el disparador y `environment:` correspondientes.
