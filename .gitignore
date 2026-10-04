@@ -1,0 +1,61 @@
+# --- Builds de Roblox / Rojo -------------------------------------------------
+# Se generan con `rojo build`; nunca se versionan.
+*.rbxl
+*.rbxlx
+*.rbxm
+*.rbxmx
+*.rbxl.lock
+*.rbxlx.lock
+# Sourcemap generado para luau-lsp (`rojo sourcemap`).
+sourcemap.json
+
+# --- Secretos ----------------------------------------------------------------
+# Las credenciales de Roblox viven SOLO en GitHub Secrets.
+.env
+.env.*
+!.env.example
+*.key
+*.pem
+secrets.*
+roblox-api-key*
+
+# --- Herramientas ------------------------------------------------------------
+.aftman/
+.rokit/
+roblox.yml
+roblox.toml
+
+# --- VS Code -----------------------------------------------------------------
+# Se comparten settings y extensiones recomendadas; el resto es personal.
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+*.code-workspace
+
+# --- Otros editores ----------------------------------------------------------
+.idea/
+*.swp
+*.swo
+*~
+
+# --- macOS -------------------------------------------------------------------
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# --- Windows -----------------------------------------------------------------
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# --- Linux -------------------------------------------------------------------
+.directory
+.Trash-*
+.nfs*
+
+# --- Temporales / logs -------------------------------------------------------
+*.log
+*.tmp
+tmp/

@@ -1,0 +1,7 @@
+# Herramientas del proyecto, gestionadas con Aftman (https://github.com/LPGhatguy/aftman).
+# Ejecuta `aftman install` en la raíz del repo para instalarlas.
+# Las versiones están fijadas: actualízalas a propósito y en un PR, nunca implícitamente.
+[tools]
+rojo = "rojo-rbx/rojo@7.7.1"
+selene = "Kampfkarren/selene@0.32.0"
+stylua = "JohnnyMorganz/StyLua@2.5.2"

@@ -1,0 +1,62 @@
+# CI: valida y construye el place. NUNCA publica en Roblox
+# (este workflow no tiene acceso a los secretos de Roblox).
+name: CI
+
+on:
+  pull_request:
+    branches: [main, develop]
+  push:
+    branches: [develop]
+
+# SEGURIDAD: mínimo privilegio. El GITHUB_TOKEN solo puede leer el repositorio.
+permissions:
+  contents: read
+
+# Cancela ejecuciones anteriores del mismo PR/rama cuando llega un commit nuevo.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Lint & Build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      # SEGURIDAD: actions oficiales fijadas por SHA de commit (inmutable),
+      # con la versión en el comentario para facilitar actualizaciones.
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Setup tools
+        uses: ./.github/actions/setup-tools
+
+      - name: Show tool versions
+        run: |
+          rojo --version
+          selene --version
+          stylua --version
+
+      - name: Validate project file
+        run: jq empty default.project.json
+
+      - name: Check formatting (StyLua)
+        run: stylua --check src
+
+      - name: Lint (Selene)
+        run: selene src
+
+      # Si el build falla, rojo devuelve un código distinto de 0 y el job falla.
+      - name: Build place
+        run: rojo build default.project.json -o game.rbxlx
+
+      - name: Upload place artifact
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: game-rbxlx
+          path: game.rbxlx
+          retention-days: 7
+          if-no-files-found: error

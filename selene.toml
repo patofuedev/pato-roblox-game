@@ -1,0 +1,2 @@
+# Linter de Luau. "roblox" habilita las APIs globales de Roblox (game, workspace, Enum...).
+std = "roblox"
