@@ -1,0 +1,56 @@
+# Acción compuesta local: instala Aftman y las herramientas de aftman.toml.
+# La comparten ci.yml y deploy.yml para no duplicar pasos.
+name: Setup tools
+description: Instala Aftman (versión fijada y verificada por SHA-256) y las herramientas de aftman.toml.
+
+inputs:
+  github-token:
+    description: Token para que Aftman consulte la API de GitHub sin sufrir rate limits.
+    required: false
+    default: ${{ github.token }}
+
+runs:
+  using: composite
+  steps:
+    # SEGURIDAD: se descarga una versión concreta de Aftman desde su repositorio
+    # oficial y se verifica su hash antes de ejecutarla. Si alguien modificara el
+    # binario publicado, el hash no coincidiría y el job fallaría.
+    - name: Install Aftman
+      shell: bash
+      env:
+        AFTMAN_VERSION: "0.3.0"
+        AFTMAN_SHA256: "194fe81e24ae7cc1f3141fd1d42db6cb60f03d42735d12ae865fe2db11ea6f0e"
+      run: |
+        set -euo pipefail
+        archive="$RUNNER_TEMP/aftman.zip"
+        curl -sSfL -o "$archive" \
+          "https://github.com/LPGhatguy/aftman/releases/download/v${AFTMAN_VERSION}/aftman-${AFTMAN_VERSION}-linux-x86_64.zip"
+        echo "${AFTMAN_SHA256}  ${archive}" | sha256sum --check --strict
+        unzip -q -o "$archive" -d "$RUNNER_TEMP/aftman"
+        "$RUNNER_TEMP/aftman/aftman" self-install
+        echo "$HOME/.aftman/bin" >> "$GITHUB_PATH"
+
+    # SEGURIDAD: el token es el GITHUB_TOKEN efímero del job (solo lectura según
+    # los permisos del workflow). Se escribe en un fichero del runner, que se
+    # destruye al terminar el job, y nunca se imprime.
+    - name: Configure Aftman GitHub auth
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.github-token }}
+      run: |
+        set -euo pipefail
+        umask 077
+        printf 'github = "%s"\n' "$GH_TOKEN" > "$HOME/.aftman/auth.toml"
+
+    - name: Cache Aftman tools
+      uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: ~/.aftman/tool-storage
+        key: aftman-${{ runner.os }}-${{ hashFiles('aftman.toml') }}
+
+    # --no-trust-check: necesario en CI (no hay terminal interactiva para
+    # confirmar). Es seguro porque solo se instalan las herramientas y versiones
+    # exactas de aftman.toml, que pasa por revisión de código en cada PR.
+    - name: Install project tools
+      shell: bash
+      run: aftman install --no-trust-check

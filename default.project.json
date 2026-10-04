@@ -1,0 +1,139 @@
+{
+	"name": "CoinCollector",
+	"tree": {
+		"$className": "DataModel",
+
+		"ReplicatedStorage": {
+			"Shared": {
+				"$path": "src/shared"
+			}
+		},
+
+		"ServerScriptService": {
+			"Server": {
+				"$path": "src/server"
+			}
+		},
+
+		"StarterPlayer": {
+			"StarterPlayerScripts": {
+				"Client": {
+					"$path": "src/client"
+				}
+			}
+		},
+
+		"Players": {
+			"$properties": {
+				"CharacterAutoLoads": true
+			}
+		},
+
+		"Lighting": {
+			"$properties": {
+				"Brightness": 2,
+				"ClockTime": 14
+			}
+		},
+
+		"Workspace": {
+			"Baseplate": {
+				"$className": "Part",
+				"$properties": {
+					"Anchored": true,
+					"Locked": true,
+					"Size": [256, 4, 256],
+					"Position": [0, -2, 0],
+					"Color": [0.38, 0.6, 0.33],
+					"Material": "Grass",
+					"TopSurface": "Smooth",
+					"BottomSurface": "Smooth"
+				}
+			},
+
+			"SpawnLocation": {
+				"$className": "SpawnLocation",
+				"$properties": {
+					"Anchored": true,
+					"Neutral": true,
+					"Duration": 0,
+					"Size": [12, 1, 12],
+					"Position": [0, 0.5, 0],
+					"Color": [0.9, 0.9, 0.9],
+					"Material": "SmoothPlastic",
+					"TopSurface": "Smooth",
+					"BottomSurface": "Smooth"
+				}
+			},
+
+			"Coins": {
+				"$className": "Folder",
+				"Coin01": {
+					"$className": "Part",
+					"$properties": {
+						"Shape": "Cylinder",
+						"Anchored": true,
+						"CanCollide": false,
+						"Size": [0.4, 3, 3],
+						"Position": [20, 3, 0],
+						"Color": [1, 0.8, 0.1],
+						"Material": "Neon",
+						"Tags": ["Coin"]
+					}
+				},
+				"Coin02": {
+					"$className": "Part",
+					"$properties": {
+						"Shape": "Cylinder",
+						"Anchored": true,
+						"CanCollide": false,
+						"Size": [0.4, 3, 3],
+						"Position": [-20, 3, 0],
+						"Color": [1, 0.8, 0.1],
+						"Material": "Neon",
+						"Tags": ["Coin"]
+					}
+				},
+				"Coin03": {
+					"$className": "Part",
+					"$properties": {
+						"Shape": "Cylinder",
+						"Anchored": true,
+						"CanCollide": false,
+						"Size": [0.4, 3, 3],
+						"Position": [0, 3, 25],
+						"Color": [1, 0.8, 0.1],
+						"Material": "Neon",
+						"Tags": ["Coin"]
+					}
+				},
+				"Coin04": {
+					"$className": "Part",
+					"$properties": {
+						"Shape": "Cylinder",
+						"Anchored": true,
+						"CanCollide": false,
+						"Size": [0.4, 3, 3],
+						"Position": [0, 3, -25],
+						"Color": [1, 0.8, 0.1],
+						"Material": "Neon",
+						"Tags": ["Coin"]
+					}
+				},
+				"Coin05": {
+					"$className": "Part",
+					"$properties": {
+						"Shape": "Cylinder",
+						"Anchored": true,
+						"CanCollide": false,
+						"Size": [0.4, 3, 3],
+						"Position": [30, 3, 30],
+						"Color": [1, 0.8, 0.1],
+						"Material": "Neon",
+						"Tags": ["Coin"]
+					}
+				}
+			}
+		}
+	}
+}
